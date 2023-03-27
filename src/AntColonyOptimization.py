@@ -1,0 +1,135 @@
+import os, sys
+import random
+
+from src.Ant import Ant
+from src.Route import Route
+from src.Coordinate import Coordinate
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+
+import time
+from src.Maze import Maze
+from src.PathSpecification import PathSpecification
+
+# Class representing the first assignment. Finds shortest path between two points in a maze according to a specific
+# path specification.
+class AntColonyOptimization:
+
+    # Constructs a new optimization object using ants.
+    # @param maze the maze .
+    # @param antsPerGen the amount of ants per generation.
+    # @param generations the amount of generations.
+    # @param Q normalization factor for the amount of dropped pheromone
+    # @param evaporation the evaporation factor.
+    def __init__(self, maze, ants_per_gen, generations, q, evaporation):
+        self.maze = maze
+        self.ants_per_gen = ants_per_gen
+        self.generations = generations
+        self.q = q
+        self.evaporation = evaporation
+
+     # Loop that starts the shortest path process
+     # @param spec Spefication of the route we wish to optimize
+     # @return ACO optimized route
+    def find_shortest_route(self, path_specification):
+        shortest_route_len = sys.maxsize
+        short_directions = []
+        k = self.generations
+        # short_directions = Route(self.start)
+        width_gen = self.maze.width / self.generations
+        len_gen = self.maze.length / self.generations
+        for i in range(self.generations):
+            if i != 0:
+                self.maze.evaporate(self.evaporation)
+            routes = []
+            # print("=========")
+            # for i in self.maze.pheromone:
+            #     print(i)
+            for j in range(self.ants_per_gen):
+                # start_x = random.randint(0, self.maze.width-1)
+                # start_y = random.randint(0, self.maze.length-1)
+                # while self.maze.walls[start_y][start_x] != 1:
+                #     start_x = random.randint(0, self.maze.width-1)
+                #     start_y = random.randint(0, self.maze.length-1)
+                #
+                # path_spec = PathSpecification(Coordinate(start_x, start_y), path_specification.end)
+                ant = Ant(self.maze, path_specification)
+
+                route, directions = ant.find_route()
+                # print("here**")
+                routes.append(directions)
+            self.maze.add_pheromone_routes(routes, self.q)
+            print("routes length: " + str(len(routes)))
+
+        # routes = []
+        # for j in range(5000):
+        #     ant = Ant(maze, path_specification)
+        #     route, directions = ant.find_route()
+        #     if len(route) != 0:
+        #         # if len(route) < shortest_route_len:
+        #         #     shortest_route_len = len(route)
+        #         #     short_directions = directions
+        #         # # print("ROUTE")
+        #         routes.append(route)
+        #         # self.maze.add_pheromone_route(route, self.q)
+        # print("routes for supplemntary level: " + str(len(routes)))
+        # self.maze.add_pheromone_routes(routes, self.q)
+
+        for j in range(self.generations*10):
+            ant = Ant(self.maze, path_specification)
+            route, directions = ant.find_route()
+            if route.size() != 0:
+                if route.size() < shortest_route_len:
+                    shortest_route_len = route.size()
+                    short_directions = route
+                # print("ROUTE")
+
+        # print(type(short_directions))
+        # print(short_directions.size())
+        # for i in self.maze.dead_ants:
+        #     print(i)
+        # # print("=========")
+        # for i in self.maze.pheromone:
+        #     print(i)
+        return short_directions
+
+# Driver function for Assignment 1
+if __name__ == "__main__":
+    # #parameters
+    # gen = 20
+    # no_gen = 15
+    # q = 100
+    # evap = 0.01
+
+    # # easy parameters
+    # gen = 15
+    # no_gen = 15
+    # q = 1600
+    # evap = 0.2
+
+    #hard parameters
+    gen = 1
+    no_gen = 1
+    q = 100
+    evap = 0.01
+
+
+    #construct the optimization objects
+    maze = Maze.create_maze("./../data/hard maze.txt")
+    spec = PathSpecification.read_coordinates("./../data/hard coordinates.txt")
+    aco = AntColonyOptimization(maze, gen, no_gen, q, evap)
+
+    #save starting time
+    start_time = int(round(time.time() * 1000))
+
+    #run optimization
+    shortest_route = aco.find_shortest_route(spec)
+
+    #print time taken
+    print("Time taken: " + str((int(round(time.time() * 1000)) - start_time) / 1000.0))
+
+    #save solution
+    shortest_route.write_to_file("./../data/hard_solution.txt")
+
+    #print route size
+    print("Route size: " + str(shortest_route.size()))
